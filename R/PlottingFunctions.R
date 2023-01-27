@@ -75,6 +75,7 @@ plot_posteriorcomplexity <- function(output) {
 #' @param evidence_thresh BF which will be considered sufficient evidence for in-/exclusion
 #' @param layout Layout of the network; qgraph argument
 #' @param edge.width Layout of the network; qgraph argument
+#' @param split if TRUE, plot is split in included and excluded edges
 #' @param ... Additional qgraph arguments
 #'
 #' @export
@@ -97,11 +98,13 @@ plot_edgeevidence <- function(output, evidence_thresh = 10, split = F, ...) {
                    edge.color = graph_color, # specifies the color of the edges
                    ...
     )
-  } else {
-    par(mfrow=c(2, 2))
+  }
+  if(split==T){
+    par(mfrow=c(1, 2))
     graph_inc <- graph_exc <- graph
     # plot included graph
     graph_inc[output$inc_probs >= .5] <- 1
+    graph_inc[output$inc_probs < .5] <- 0
     diag(graph_inc) <- 1
     colnames(graph_inc) <- colnames(output$estimates_bma)
     qgraph::qgraph(graph_inc,
@@ -109,7 +112,8 @@ plot_edgeevidence <- function(output, evidence_thresh = 10, split = F, ...) {
                    ...
     )
     # Plot excluded graph
-    graph_exc[output$inc_probs >= .5] <- 1
+    graph_exc[output$inc_probs >= .5] <- 0
+    graph_exc[output$inc_probs < .5] <- 1
     diag(graph_exc) <- 1
     colnames(graph_exc) <- colnames(output$estimates_bma)
     qgraph::qgraph(graph_exc,
@@ -129,10 +133,8 @@ plot_edgeevidence <- function(output, evidence_thresh = 10, split = F, ...) {
 #' @param exc_prob threshold for excluding edges; all edges with a lower inclusion probability will not be shown
 #' @param ... Additional qgraph arguments
 #'
-#' @return
 #' @export
-#'
-#' @examples
+
 plot_network <- function(output, exc_prob = .5, ...) {
 
 

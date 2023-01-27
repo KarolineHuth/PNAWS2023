@@ -38,7 +38,7 @@ extract_results <- function(fit, method, package = "BDgraph", posterior_samples=
         }
         # Extract posterior samples
         data<-as.matrix(data)
-        bdgraph_res$samples_posterior <- extractposterior(fit, data=data, method = method, not.cont)[[1]]
+        bdgraph_res$samples_posterior <- extract_posterior(fit, data=data, method = method, not.cont)[[1]]
         # Centrality indices
         bdgraph_res$centrality_strength <- centrality_strength(bdgraph_res)
         bdgraph_res$centrality <- centrality(bdgraph_res)
@@ -73,7 +73,7 @@ extract_results <- function(fit, method, package = "BDgraph", posterior_samples=
         }
         data<-as.matrix(data)
         # Extract posterior samples
-        bdgraph_res$samples_posterior <- extractposterior(fit, data, method = method, not.cont = not.cont)[[1]]
+        bdgraph_res$samples_posterior <- extract_posterior(fit, data, method = method, not.cont = not.cont)[[1]]
         # Centrality indices
         bdgraph_res$centrality_strength <- centrality_strength(bdgraph_res)
         bdgraph_res$centrality <- centrality(bdgraph_res)

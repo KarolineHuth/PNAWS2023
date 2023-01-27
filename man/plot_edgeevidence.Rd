@@ -11,6 +11,8 @@ plot_edgeevidence(output, evidence_thresh = 10, split = F, ...)
 
 \item{evidence_thresh}{BF which will be considered sufficient evidence for in-/exclusion}
 
+\item{split}{if TRUE, plot is split in included and excluded edges}
+
 \item{...}{Additional qgraph arguments}
 
 \item{layout}{Layout of the network; qgraph argument}
