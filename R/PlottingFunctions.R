@@ -79,7 +79,7 @@ plot_posteriorcomplexity <- function(output) {
 #'
 #' @export
 #'
-plot_edgeevidence <- function(output, evidence_thresh = 10, layout = "spring", ...) {
+plot_edgeevidence <- function(output, evidence_thresh = 10, split = F, ...) {
 
   graph <- output$BF
   diag(graph) <- 1
@@ -89,13 +89,35 @@ plot_edgeevidence <- function(output, evidence_thresh = 10, layout = "spring", .
   graph_color <-  ifelse(graph < evidence_thresh & graph > 1/evidence_thresh, graph_color <- "#bfbfbf", graph_color <- "#36648b")
   graph_color[graph < (1/evidence_thresh)] <- "#990000"
 
-  graph[graph <= 1] <- 1
-  diag(graph) <- 1
-  colnames(graph) <- colnames(output$estimates_bma)
-  qgraph::qgraph(graph,
-                 edge.color = graph_color, # specifies the color of the edges
-                 ...
-  )
+  if(split == F){
+    graph[output$inc_probs <= 1] <- 1
+    diag(graph) <- 1
+    colnames(graph) <- colnames(output$estimates_bma)
+    qgraph::qgraph(graph,
+                   edge.color = graph_color, # specifies the color of the edges
+                   ...
+    )
+  } else {
+    par(mfrow=c(2, 2))
+    graph_inc <- graph_exc <- graph
+    # plot included graph
+    graph_inc[output$inc_probs >= .5] <- 1
+    diag(graph_inc) <- 1
+    colnames(graph_inc) <- colnames(output$estimates_bma)
+    qgraph::qgraph(graph_inc,
+                   edge.color = graph_color, # specifies the color of the edges
+                   ...
+    )
+    # Plot excluded graph
+    graph_exc[output$inc_probs >= .5] <- 1
+    diag(graph_exc) <- 1
+    colnames(graph_exc) <- colnames(output$estimates_bma)
+    qgraph::qgraph(graph_exc,
+                   edge.color = graph_color, # specifies the color of the edges
+                   ...
+    )
+  }
+
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -143,11 +165,11 @@ plot_parameterforest <- function(output, thresholds = F) {
   colnames(posterior) <- c("parameter", "posterior_medians", "lower", "upper")
 
   if(package != "BDgraph")
-  if(!thresholds) {
-    # Filter interaction parameters (sigma), exclude thresholds
-    index <- grep('^s', posterior$parameter)
-    posterior <- posterior[index, ]
-  }
+    if(!thresholds) {
+      # Filter interaction parameters (sigma), exclude thresholds
+      index <- grep('^s', posterior$parameter)
+      posterior <- posterior[index, ]
+    }
 
 
   ggplot2::ggplot(data = posterior, aes(x = parameter, y = posterior_medians, ymin = lower,

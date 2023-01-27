@@ -4,16 +4,16 @@
 \alias{plot_edgeevidence}
 \title{Edge evidence plot}
 \usage{
-plot_edgeevidence(output, evidence_thresh = 10, layout = "spring", ...)
+plot_edgeevidence(output, evidence_thresh = 10, split = F, ...)
 }
 \arguments{
 \item{output}{Output object from the extract_results function}
 
 \item{evidence_thresh}{BF which will be considered sufficient evidence for in-/exclusion}
 
-\item{layout}{Layout of the network; qgraph argument}
-
 \item{...}{Additional qgraph arguments}
+
+\item{layout}{Layout of the network; qgraph argument}
 
 \item{edge.width}{Layout of the network; qgraph argument}
 }
