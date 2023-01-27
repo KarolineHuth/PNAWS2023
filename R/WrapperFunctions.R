@@ -1,5 +1,20 @@
-#'@export
-extract_results <- function(fit,method, package = "BDgraph", posterior_samples=F, not.cont=NULL, data=NULL){
+
+#' Extract results from a Bayesian analysis of networks
+#'
+#' @param fit fit object of the respective package used
+#' @param method type of model estimated, e.g., ggm, gcgm, dgm-binary, Ising
+#' @param package package used to obtain the fit object
+#' @param posterior_samples binary indicating whether the posterior samples should be extracted
+#' @param not.cont only if method = "gcgm" vector indicating the not-continuous variables
+#' @param data if posterior_samples = T, provide the raw data used to estimate the network
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#'
+extract_results <- function(fit, method, package = "BDgraph", posterior_samples=F, not.cont=NULL, data=NULL){
+
   # ----------------------------------------
   # Obtain the output
   # ----------------------------------------

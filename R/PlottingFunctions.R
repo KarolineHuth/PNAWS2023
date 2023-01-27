@@ -98,6 +98,9 @@ plot_edgeevidence <- function(output, evidence_thresh = 10, layout = "spring", e
   graph_color <-  ifelse(graph < evidence_thresh & graph > 1/evidence_thresh, graph_color <- "#bfbfbf", graph_color <- "#36648b")
   graph_color[graph < (1/evidence_thresh)] <- "#990000"
 
+  graph[graph <= 1] <- 1
+  diag(graph) <- 1
+  colnames(graph) <- colnames(output$estimat)
   qgraph::qgraph(matrix(1, ncol = ncol(graph), nrow = ncol(graph)),
                  edge.color = graph_color, # specifies the color of the edges
                  ...
@@ -136,6 +139,7 @@ plot_network <- function(output, exc_prob = .5, ...) {
 # HDI plot
 
 plot_parameterforest <- function(output, thresholds = F) {
+
   package <- output$package
   if(is.null(output$samples_posterior)){
     stop("Samples of the posterior distribution required. When extracting the results, set \"posterior_samples = TRUE\".")
