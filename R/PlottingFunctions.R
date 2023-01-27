@@ -75,46 +75,20 @@ plot_posteriorcomplexity <- function(output) {
           panel.grid.major = element_blank()
     )
 }
-# ---------------------------------------------------------------------------------------------------------------
-# Plot most probable structure
-# !!!!!!!!!!!!!!! ADAPT!!!!!!!!!!!!!!!!!!!!!!!!!!!
-plot_topstructures <- function(output, top_n = 3){
-  if (output$package != "BDgraph") {
-    stop("Plot currently only implemented for BDgraph fits",
-         call. = FALSE)
-  }
-  if (!requireNamespace("qgraph", quietly = TRUE)) {
-    stop("Package \"qgraph\" needed for this function to work. Please install it.",
-         call. = FALSE)
-  }
-
-  highest_probs <- tail(output$structure_probabilities, top_n)
-  most_probable <- match(highest_probs, output$structure_probabilities)
-
-  complexity <- matrix(0, nrow=length(output$sample_graph), ncol = (nrow(output$estimates_bma)*(nrow(output$estimates_bma)-1)/2))
-
-  for(i in 1:length(output$sample_graph)){
-    complexity[i, ] <- as.numeric(unlist(strsplit(output$sample_graph[i], "")))
-  }
-
-  for(index in most_probable){
-    graph_structure <- vector2matrix(complexity[index, ], nrow(output$estimates_bma))
-    diag(graph_structure) <- 1
-
-    qgraph::qgraph(graph_structure, layout = "circle", theme = "TeamFortress",
-                   color= c("#f0ae0e"), vsize = 8, repulsion = .9,
-                   legend = F, legend.cex = 0.55,
-                   title = paste("Posterior Probability = ", output$structure_probabilities[index]))
-  }
-}
 
 # plot for edge inclusion BF
-plot_edgeevidence <- function(output, evidence_thresh = 10) {
-
-  if (!requireNamespace("qgraph", quietly = TRUE)) {
-    stop("Package \"qgraph\" needed for this function to work. Please install it.",
-         call. = FALSE)
-  }
+#' Edge evidence plot
+#'
+#' @param output Output object from the extract_results function
+#' @param evidence_thresh BF which will be considered sufficient evidence for in-/exclusion
+#' @param layout Layout of the network; qgraph argument
+#' @param edge.width Layout of the network; qgraph argument
+#' @param ... Additional qgraph arguments
+#'
+#' @return
+#' @export
+#'
+plot_edgeevidence <- function(output, evidence_thresh = 10, layout = "spring", edge.width = 3, ...) {
 
   graph <- output$BF
   diag(graph) <- 1
@@ -125,17 +99,25 @@ plot_edgeevidence <- function(output, evidence_thresh = 10) {
   graph_color[graph < (1/evidence_thresh)] <- "#990000"
 
   qgraph::qgraph(matrix(1, ncol = ncol(graph), nrow = ncol(graph)),
-                 theme = "TeamFortress",
-                 color= c("#f0ae0e"),vsize = 10, repulsion = .9, maximum = 1,
-                 legend = F,label.cex = 1.2, edge.width = 3,
-                 edge.color = graph_color # specifies the color of the edges
+                 edge.color = graph_color, # specifies the color of the edges
+                 ...
   )
 }
 
 # ---------------------------------------------------------------------------------------------------------------
 # Plot median probability model
 
-plot_network <- function(output, exc_prob = .5) {
+#' Network plot
+#'
+#' @param output Output object from the extract_results function
+#' @param exc_prob threshold for excluding edges; all edges with a lower inclusion probability will not be shown
+#' @param ... Additional qgraph arguments
+#'
+#' @return
+#' @export
+#'
+#' @examples
+plot_network <- function(output, exc_prob = .5, ...) {
 
 
   graph <- output$estimates_bma
@@ -146,9 +128,7 @@ plot_network <- function(output, exc_prob = .5) {
   diag(graph) <- 1
 
   # Plot
-  qgraph::qgraph(graph, theme = "TeamFortress",
-                 color= c("#f0ae0e"), vsize = 8, repulsion = .9,
-                 legend = F,  label.cex = 1.2, layout="spring")
+  qgraph::qgraph(graph, ...)
 
 }
 
