@@ -8,10 +8,7 @@
 #' @param not.cont only if method = "gcgm" vector indicating the not-continuous variables
 #' @param data if posterior_samples = T, provide the raw data used to estimate the network
 #'
-#' @return
 #' @export
-#'
-#' @examples
 #'
 extract_results <- function(fit, method, package = "BDgraph", posterior_samples=F, not.cont=NULL, data=NULL){
 

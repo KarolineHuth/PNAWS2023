@@ -1,16 +1,7 @@
 #' @import ggplot2 HDInterval qgraph BDgraph dplyr
 
 # Plot Structure probabilities
-
-#' Title
-#'
-#' @param output
-#' @param as.BF
-#'
-#' @return
 #' @export
-#'
-#' @examples
 plot_structure_probability <- function(output, as.BF = TRUE) {
 
   sorted_structure_prob <- as.data.frame(sort(output$structure_probabilities), decreasing=T)
@@ -45,6 +36,7 @@ plot_structure_probability <- function(output, as.BF = TRUE) {
 
 # ---------------------------------------------------------------------------------------------------------------
 # Plot structure complexity
+#' @export
 plot_posteriorcomplexity <- function(output) {
   if (output$package == "rbinnet") {
     stop("Plot not implemented for rbinnet",
@@ -85,10 +77,9 @@ plot_posteriorcomplexity <- function(output) {
 #' @param edge.width Layout of the network; qgraph argument
 #' @param ... Additional qgraph arguments
 #'
-#' @return
 #' @export
 #'
-plot_edgeevidence <- function(output, evidence_thresh = 10, layout = "spring", edge.width = 3, ...) {
+plot_edgeevidence <- function(output, evidence_thresh = 10, layout = "spring", ...) {
 
   graph <- output$BF
   diag(graph) <- 1
@@ -100,8 +91,8 @@ plot_edgeevidence <- function(output, evidence_thresh = 10, layout = "spring", e
 
   graph[graph <= 1] <- 1
   diag(graph) <- 1
-  colnames(graph) <- colnames(output$estimat)
-  qgraph::qgraph(matrix(1, ncol = ncol(graph), nrow = ncol(graph)),
+  colnames(graph) <- colnames(output$estimates_bma)
+  qgraph::qgraph(graph,
                  edge.color = graph_color, # specifies the color of the edges
                  ...
   )
@@ -137,7 +128,7 @@ plot_network <- function(output, exc_prob = .5, ...) {
 
 # ---------------------------------------------------------------------------------------------------------------
 # HDI plot
-
+#' @export
 plot_parameterforest <- function(output, thresholds = F) {
 
   package <- output$package
@@ -175,7 +166,7 @@ plot_parameterforest <- function(output, thresholds = F) {
 
 # ---------------------------------------------------------------------------------------------------------------
 # Sigma samples
-
+#' @export
 plot_parameterdistribution <- function(output, parameter = "sigma"){
 
   package <- output$package
