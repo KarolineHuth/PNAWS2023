@@ -1,0 +1,244 @@
+#' @import ggplot2 HDInterval qgraph BDgraph dplyr
+
+# Plot Structure probabilities
+
+#' Title
+#'
+#' @param output
+#' @param as.BF
+#'
+#' @return
+#' @export
+#'
+#' @examples
+plot_structure_probability <- function(output, as.BF = TRUE) {
+
+  sorted_structure_prob <- as.data.frame(sort(output$structure_probabilities), decreasing=T)
+  colnames(sorted_structure_prob) <- "posterior_prob"
+  if(as.BF){
+    BF1s <- sorted_structure_prob$posterior_prob / sorted_structure_prob$posterior_prob[1] # BF best structure vs. others
+    data <- data.frame(structures = 1:length(BF1s), BayesFactor = BF1s)
+    ggplot2::ggplot(data, aes(x = structures, y = BayesFactor)) +
+      geom_point(size = 4, shape = 1) +
+      scale_y_continuous(trans = "log10") +
+      theme_classic()+
+      labs(x = "Structures",
+           y = expression(log(BF[1][s])))+
+      geom_hline(yintercept = 1/10, linetype = "dashed", size = 1.5)  +
+      theme(panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(), axis.line = element_line(colour = "black", size = 1.1),
+            axis.text = element_text(size = 14), axis.title = element_text(size = 16),
+            axis.ticks.length = unit(.25, "cm"))
+  } else {
+    data <- data.frame(structures = 1:nrow(sorted_structure_prob), Probs = sorted_structure_prob)
+    ggplot2::ggplot(data, aes(x = structures, y = posterior_prob)) +
+      geom_point(size = 4, shape = 1) +
+      theme_classic()+
+      labs(x = "Structures",
+           y = "Posterior Structure Probability")+
+      theme(panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(), axis.line = element_line(colour = "black", size = 1.1),
+            axis.text = element_text(size = 14), axis.title = element_text(size = 16),
+            axis.ticks.length = unit(.25, "cm"))
+  }
+}
+
+# ---------------------------------------------------------------------------------------------------------------
+# Plot structure complexity
+plot_posteriorcomplexity <- function(output) {
+  if (output$package == "rbinnet") {
+    stop("Plot not implemented for rbinnet",
+         call. = FALSE)
+  }
+  complexity <- c()
+  for(i in 1:length(output$sample_graph)){
+    complexity[i] <- sum(as.numeric(unlist(strsplit(res$sample_graph[i], ""))))
+  }
+
+  data_complexity <- tibble(complexity, weights = res$graph_weights)  %>%
+    group_by(complexity) %>%
+    summarise(complexity_weight = sum(weights)) %>%
+    mutate(complexity_weight = complexity_weight/sum(complexity_weight))
+
+  ggplot(data_complexity, aes(x = complexity, y = complexity_weight))+
+    geom_point() +
+    ylab("Posterior Complexity Probability") +
+    xlab("Complexity")  +
+    theme_minimal()+
+    theme(legend.position = c(.85, 0.25), axis.text=element_text(size=20),
+          legend.background = element_rect(fill = NULL), panel.border = element_blank(),
+          axis.line = element_line(colour = "black", size = 1.1), axis.ticks.length=unit(.2, "cm"),
+          axis.ticks = element_line(size= .8), legend.text = element_text(size=14),
+          axis.title.x = element_text(size=18,face="bold"),
+          axis.title.y = element_text(size=18,face="bold"),
+          text=element_text(  family="Times New Roman"),
+          panel.grid.major = element_blank()
+    )
+}
+# ---------------------------------------------------------------------------------------------------------------
+# Plot most probable structure
+# !!!!!!!!!!!!!!! ADAPT!!!!!!!!!!!!!!!!!!!!!!!!!!!
+plot_topstructures <- function(output, top_n = 3){
+  if (output$package != "BDgraph") {
+    stop("Plot currently only implemented for BDgraph fits",
+         call. = FALSE)
+  }
+  if (!requireNamespace("qgraph", quietly = TRUE)) {
+    stop("Package \"qgraph\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+
+  highest_probs <- tail(output$structure_probabilities, top_n)
+  most_probable <- match(highest_probs, output$structure_probabilities)
+
+  complexity <- matrix(0, nrow=length(output$sample_graph), ncol = (nrow(output$estimates_bma)*(nrow(output$estimates_bma)-1)/2))
+
+  for(i in 1:length(output$sample_graph)){
+    complexity[i, ] <- as.numeric(unlist(strsplit(output$sample_graph[i], "")))
+  }
+
+  for(index in most_probable){
+    graph_structure <- vector2matrix(complexity[index, ], nrow(output$estimates_bma))
+    diag(graph_structure) <- 1
+
+    qgraph::qgraph(graph_structure, layout = "circle", theme = "TeamFortress",
+                   color= c("#f0ae0e"), vsize = 8, repulsion = .9,
+                   legend = F, legend.cex = 0.55,
+                   title = paste("Posterior Probability = ", output$structure_probabilities[index]))
+  }
+}
+
+# plot for edge inclusion BF
+plot_edgeevidence <- function(output, evidence_thresh = 10) {
+
+  if (!requireNamespace("qgraph", quietly = TRUE)) {
+    stop("Package \"qgraph\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+
+  graph <- output$BF
+  diag(graph) <- 1
+
+  # assign a color to each edge (inclusion - blue, exclusion - red, no conclusion - grey)
+  graph_color <- graph
+  graph_color <-  ifelse(graph < evidence_thresh & graph > 1/evidence_thresh, graph_color <- "#bfbfbf", graph_color <- "#36648b")
+  graph_color[graph < (1/evidence_thresh)] <- "#990000"
+
+  qgraph::qgraph(matrix(1, ncol = ncol(graph), nrow = ncol(graph)),
+                 theme = "TeamFortress",
+                 color= c("#f0ae0e"),vsize = 10, repulsion = .9, maximum = 1,
+                 legend = F,label.cex = 1.2, edge.width = 3,
+                 edge.color = graph_color # specifies the color of the edges
+  )
+}
+
+# ---------------------------------------------------------------------------------------------------------------
+# Plot median probability model
+
+plot_network <- function(output, exc_prob = .5) {
+
+
+  graph <- output$estimates_bma
+
+  # Exclude edges with a inclusion probability lower .5
+  inc_probs_m <- output$inc_probs
+  graph[inc_probs_m < exc_prob] <- 0
+  diag(graph) <- 1
+
+  # Plot
+  qgraph::qgraph(graph, theme = "TeamFortress",
+                 color= c("#f0ae0e"), vsize = 8, repulsion = .9,
+                 legend = F,  label.cex = 1.2, layout="spring")
+
+}
+
+# ---------------------------------------------------------------------------------------------------------------
+# HDI plot
+
+plot_parameterforest <- function(output, thresholds = F) {
+  package <- output$package
+  if(is.null(output$samples_posterior)){
+    stop("Samples of the posterior distribution required. When extracting the results, set \"posterior_samples = TRUE\".")
+  }
+
+  hdi_intervals <- as.data.frame(apply(output$samples_posterior, MARGIN = 2, FUN = hdi))
+  posterior_medians <- apply(output$samples_posterior, MARGIN = 2, FUN = median)
+
+  posterior <- cbind(colnames(hdi_intervals), data.frame(posterior_medians, row.names = NULL), data.frame(t(hdi_intervals), row.names = NULL))
+  colnames(posterior) <- c("parameter", "posterior_medians", "lower", "upper")
+
+  if(package != "BDgraph")
+  if(!thresholds) {
+    # Filter interaction parameters (sigma), exclude thresholds
+    index <- grep('^s', posterior$parameter)
+    posterior <- posterior[index, ]
+  }
+
+
+  ggplot2::ggplot(data = posterior, aes(x = parameter, y = posterior_medians, ymin = lower,
+                                        ymax = upper)) +
+    geom_pointrange(position=position_dodge(width=c(0.5)), size = .9) +
+    theme_bw() +
+    coord_flip() +
+    ylab("Highest Density Interval of Parameter")+
+    xlab("") +
+    geom_hline(yintercept = 0, linetype = "dashed", size = 1.3) +
+    theme(axis.text=element_text(size=14), panel.border = element_blank(),
+          axis.line = element_line(colour = "black", size = 1.1), axis.ticks.length=unit(.2, "cm"),
+          axis.ticks = element_line(size= .8),
+          axis.title.x = element_text(size=16,face="bold"), plot.title = element_text(size = 18, face = "bold"))
+}
+
+# ---------------------------------------------------------------------------------------------------------------
+# Sigma samples
+
+plot_parameterdistribution <- function(output, parameter = "sigma"){
+
+  package <- output$package
+
+  if(is.null(output$samples_posterior)){
+    stop("Samples of the posterior distribution required. When extracting the results, set \"posterior_samples = TRUE\".")
+  }
+
+  sigma_samples <- output$samples_posterior
+  par(mfrow = c(2,2))
+
+  if(package=="BDgraph"){
+    for(index in 1:ncol(sigma_samples)){
+      plot(density(sigma_samples[, index]), main = colnames(sigma_samples)[index],
+           xlab = "Parameter Estimate", cex = 4, lwd = 1.2, bty = "n")
+    }
+  }
+
+  if(package!="BDgraph"){
+    if(parameter == "sigma") {
+      index_sigma <- grep('^s', colnames(sigma_samples))
+      for(index in index_sigma){
+        plot(density(sigma_samples[, index]), main = colnames(sigma_samples)[index],
+             xlab = "Parameter Estimate", cex = 4, lwd = 1.2, bty = "n")
+      }
+
+    } else if (parameter == "mu"){
+      index_mu <- grep('^m', colnames(sigma_samples))
+      for(index in index_mu){
+        plot(density(sigma_samples[, index]), main = colnames(sigma_samples)[index],
+             xlab = "Parameter Estimate", cex = 4, lwd = 1.2, bty = "n")
+      }
+
+    } else {
+      # Plot mu
+      index_mu <- grep('^m', colnames(sigma_samples))
+      for(index in index_mu){
+        plot(density(sigma_samples[, index]), main = colnames(sigma_samples)[index],
+             xlab = "Parameter Estimate", cex = 4, lwd = 1.2, bty = "n")
+      }
+
+      # Plot sigma
+      index_sigma <- grep('^s', colnames(sigma_samples))
+      for(index in index_sigma){
+        plot(density(sigma_samples[, index]), main = colnames(sigma_samples)[index],
+             xlab = "Parameter Estimate", cex = 4, lwd = 1.2, bty = "n")
+      }
+    }
+  }
+}
