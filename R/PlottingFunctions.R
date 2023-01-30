@@ -163,8 +163,15 @@ plot_parameterforest <- function(output, thresholds = F) {
   hdi_intervals <- as.data.frame(apply(output$samples_posterior, MARGIN = 2, FUN = hdi))
   posterior_medians <- apply(output$samples_posterior, MARGIN = 2, FUN = median)
 
-  posterior <- cbind(colnames(hdi_intervals), data.frame(posterior_medians, row.names = NULL), data.frame(t(hdi_intervals), row.names = NULL))
-  colnames(posterior) <- c("parameter", "posterior_medians", "lower", "upper")
+  names <- colnames(output$estimates_bma)
+  combinations <- combn(nrow(output$estimates_bma), 2)
+  index <- vector(length = ncol(combinations))
+  for(i in 1:ncol(combinations)) index[i] <- paste0(names[combinations[1, i]],"-",names[combinations[2, i]])
+
+  posterior <- cbind(data.frame(posterior_medians, row.names = NULL),
+                     data.frame(t(hdi_intervals), row.names = NULL), index)
+  colnames(posterior) <- c("posterior_medians", "lower", "upper", "names")
+  posterior <- posterior[order(posterior$posterior_medians),]
 
   if(package != "BDgraph")
     if(!thresholds) {
@@ -173,20 +180,20 @@ plot_parameterforest <- function(output, thresholds = F) {
       posterior <- posterior[index, ]
     }
 
-
-  ggplot2::ggplot(data = posterior, aes(x = parameter, y = posterior_medians, ymin = lower,
+  ggplot2::ggplot(data = posterior, aes(x = index, y = posterior_medians, ymin = lower,
                                         ymax = upper)) +
-    geom_pointrange(position=position_dodge(width=c(0.5)), size = .9) +
+    geom_pointrange(position=position_dodge(width=c(0.3)), size = .5) +
     theme_bw() +
     coord_flip() +
     ylab("Highest Density Interval of Parameter")+
     xlab("") +
     geom_hline(yintercept = 0, linetype = "dashed", size = 1.3) +
-    theme(axis.text=element_text(size=14), panel.border = element_blank(),
+    theme(axis.text=element_text(size=8), panel.border = element_blank(),
           axis.line = element_line(colour = "black", size = 1.1), axis.ticks.length=unit(.2, "cm"),
           axis.ticks = element_line(size= .8),
           axis.title.x = element_text(size=16,face="bold"), plot.title = element_text(size = 18, face = "bold"))
 }
+
 
 # ---------------------------------------------------------------------------------------------------------------
 # Sigma samples
