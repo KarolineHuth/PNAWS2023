@@ -152,8 +152,15 @@ plot_network <- function(output, exc_prob = .5, ...) {
 
 # ---------------------------------------------------------------------------------------------------------------
 # HDI plot
+
+#' Parameter forest plot of interaction parameters and 95% highest density intervals
+#'
+#' @param output Output object from the extract_results function
+#'
 #' @export
-plot_parameterforest <- function(output, thresholds = F) {
+#'
+#'
+plot_parameterforest <- function(output) {
 
   package <- output$package
   if(is.null(output$samples_posterior)){
@@ -171,16 +178,11 @@ plot_parameterforest <- function(output, thresholds = F) {
   posterior <- cbind(data.frame(posterior_medians, row.names = NULL),
                      data.frame(t(hdi_intervals), row.names = NULL), index)
   colnames(posterior) <- c("posterior_medians", "lower", "upper", "names")
-  posterior <- posterior[order(posterior$posterior_medians),]
+  posterior <- posterior[order(posterior$posterior_medians, decreasing = F),]
+  posterior$names <- factor(posterior$names, levels = posterior$names)
 
-  if(package != "BDgraph")
-    if(!thresholds) {
-      # Filter interaction parameters (sigma), exclude thresholds
-      index <- grep('^s', posterior$parameter)
-      posterior <- posterior[index, ]
-    }
 
-  ggplot2::ggplot(data = posterior, aes(x = index, y = posterior_medians, ymin = lower,
+  ggplot2::ggplot(data = posterior, aes(x = names, y = posterior_medians, ymin = lower,
                                         ymax = upper)) +
     geom_pointrange(position=position_dodge(width=c(0.3)), size = .5) +
     theme_bw() +
@@ -193,7 +195,6 @@ plot_parameterforest <- function(output, thresholds = F) {
           axis.ticks = element_line(size= .8),
           axis.title.x = element_text(size=16,face="bold"), plot.title = element_text(size = 18, face = "bold"))
 }
-
 
 # ---------------------------------------------------------------------------------------------------------------
 # Sigma samples
