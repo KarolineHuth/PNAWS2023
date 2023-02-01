@@ -120,6 +120,7 @@ plot_edgeevidence <- function(output, evidence_thresh = 10, split = F, ...) {
                    edge.color = graph_color, # specifies the color of the edges
                    ...
     )
+    par(mfrow=c(1, 1))
   }
 
 }
